@@ -51,11 +51,11 @@ a{color:#d97757}a:hover{color:#FF9F43}
       <p style="font-size:32px;font-weight:700;margin:0">{{ totalCount }}</p>
     </div>
     <div style="background:#fff;border:1px solid #E8E7E4;border-radius:12px;padding:24px">
-      <p style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#2F2B3D8C;margin:0 0 8px">고유 방문자 (IP)</p>
+      <p style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#2F2B3D8C;margin:0 0 8px">방문자 수 (IP 기준)</p>
       <p style="font-size:32px;font-weight:700;margin:0">{{ uniqueIpCount }}</p>
     </div>
     <div style="background:#fff;border:1px solid #E8E7E4;border-radius:12px;padding:24px">
-      <p style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#2F2B3D8C;margin:0 0 8px">기록된 이벤트</p>
+      <p style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#2F2B3D8C;margin:0 0 8px">누적 방문자 수</p>
       <p style="font-size:32px;font-weight:700;margin:0">{{ rawCount }}</p>
     </div>
   </div>
@@ -133,7 +133,11 @@ a{color:#d97757}a:hover{color:#FF9F43}
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
-  state = { siteFilter: '전체', myIp: '', excludeMe: localStorage.getItem('pf_exclude_me') !== '0', visits: [], endpoint: localStorage.getItem('pf_endpoint') || 'https://script.google.com/macros/s/AKfycbxkYqQVIFUj94LvY_L_cfm-SoVL7F2dGuW157ezBzEkrrPnnT8I-BYZLzxdw4ei49Oevg/exec', fromRemote: false };
+  state = { siteFilter: '전체', myIp: '', excludeMe: localStorage.getItem('pf_exclude_me') !== '0', visits: [], endpoint: (function(){
+    var s = localStorage.getItem('pf_endpoint');
+    if (s && s.indexOf('AKfycbxkYqQVIFUj94LvY_L_cfm-SoVL7F2dGuW157ezBzEkrrPnnT8I-BYZLzxdw4ei49Oevg') > -1) { s = null; localStorage.removeItem('pf_endpoint'); }
+    return s;
+  })() || 'https://script.google.com/macros/s/AKfycbxUQZeTza47oB-GAYb7l7lTqrBEunse0WpW_tTrqplHEGjBe-nAcMPkSvsX4YuoTUob/exec', fromRemote: false };
 
   componentDidMount() {
     fetch('https://api.ipify.org?format=json').then(r => r.json()).then(j => this.setState({ myIp: j.ip })).catch(() => {});
