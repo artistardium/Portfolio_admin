@@ -34,6 +34,13 @@ a{color:#d97757}a:hover{color:#FF9F43}
     <a onClick="{{ toggleExcludeMe }}" title="{{ myIpNote }}" style="font-size:11px;font-weight:600;border:1px solid #E8E7E4;border-radius:99px;padding:6px 14px;cursor:pointer;background:{{ excludeBg }};color:{{ excludeColor }}">내 접속 제외</a>
   </div>
 
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+    <sc-for list="{{ siteTabs }}" as="s" hint-placeholder-count="4">
+      <a onClick="{{ s.pick }}" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;border:1px solid #E8E7E4;border-radius:99px;padding:8px 16px;cursor:pointer;background:{{ s.bg }};color:{{ s.color }}">{{ s.name }}<span style="font-size:11px;opacity:0.65">{{ s.count }}</span></a>
+    </sc-for>
+  </div>
+  <p style="font-size:12px;color:#2F2B3D8C;margin:0 0 20px">{{ filterNote }}</p>
+
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px">
     <div style="background:#fff;border:1px solid #E8E7E4;border-radius:12px;padding:24px">
       <p style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#2F2B3D8C;margin:0 0 8px">오늘 접속</p>
@@ -93,23 +100,6 @@ a{color:#d97757}a:hover{color:#FF9F43}
     </div>
   </div>
 
-  <div style="background:#fff;border:1px solid #E8E7E4;border-radius:12px;padding:24px;margin-bottom:16px">
-    <p style="font-size:13px;font-weight:600;margin:0 0 4px">플랫폼별 접속 통계</p>
-    <p style="font-size:11px;color:#2F2B3D8C;margin:0 0 16px">리멤버 · 원티드 · 잡코리아 등 유입 플랫폼 기준 — 링크 공유 시 주소 뒤에 ?src=remember / ?src=wanted / ?src=jobkorea 를 붙이면 정확하게 집계됩니다</p>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
-      <sc-for list="{{ platformStats }}" as="p" hint-placeholder-count="4">
-        <div style="background:#F8F7F5;border-radius:10px;padding:16px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <span style="font-size:13px;font-weight:600">{{ p.name }}</span>
-            <span style="font-size:13px;font-weight:700;color:#d97757">{{ p.count }}회</span>
-          </div>
-          <div style="height:6px;background:#F0EFED;border-radius:99px;overflow:hidden"><div style="height:100%;background:#FF9F43;border-radius:99px;width:{{ p.pct }}"></div></div>
-          <p style="font-size:11px;color:#2F2B3D8C;margin:8px 0 0">{{ p.share }}</p>
-        </div>
-      </sc-for>
-    </div>
-  </div>
-
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
     <div style="background:#fff;border:1px solid #E8E7E4;border-radius:12px;padding:24px">
       <p style="font-size:13px;font-weight:600;margin:0 0 16px">메뉴별 접속 통계</p>
@@ -125,7 +115,7 @@ a{color:#d97757}a:hover{color:#FF9F43}
       </sc-for>
     </div>
     <div style="background:#fff;border:1px solid #E8E7E4;border-radius:12px;padding:24px">
-      <p style="font-size:13px;font-weight:600;margin:0 0 16px">방문 IP (최근순)</p>
+      <p style="font-size:13px;font-weight:600;margin:0 0 16px">방문 IP (최근순 · 최대 5개)</p>
       <div style="max-height:420px;overflow-y:auto">
         <sc-for list="{{ ipList }}" as="ip" hint-placeholder-count="8">
           <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #F0EFED;gap:12px">
@@ -143,7 +133,7 @@ a{color:#d97757}a:hover{color:#FF9F43}
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
-  state = { myIp: '', excludeMe: localStorage.getItem('pf_exclude_me') !== '0', visits: [], endpoint: localStorage.getItem('pf_endpoint') || 'https://script.google.com/macros/s/AKfycbxkYqQVIFUj94LvY_L_cfm-SoVL7F2dGuW157ezBzEkrrPnnT8I-BYZLzxdw4ei49Oevg/exec', fromRemote: false };
+  state = { siteFilter: '전체', myIp: '', excludeMe: localStorage.getItem('pf_exclude_me') !== '0', visits: [], endpoint: localStorage.getItem('pf_endpoint') || 'https://script.google.com/macros/s/AKfycbxkYqQVIFUj94LvY_L_cfm-SoVL7F2dGuW157ezBzEkrrPnnT8I-BYZLzxdw4ei49Oevg/exec', fromRemote: false };
 
   componentDidMount() {
     fetch('https://api.ipify.org?format=json').then(r => r.json()).then(j => this.setState({ myIp: j.ip })).catch(() => {});
@@ -165,12 +155,23 @@ class Component extends DCLogic {
     let visits = this.state.visits.filter(v => v && v.t);
     if (this.state.excludeMe && this.state.myIp) visits = visits.filter(v => v.ip !== this.state.myIp);
     // dedupe: same ip within same hour = 1 visit
-    const seen = new Set(); const uniq = [];
+    const seen = new Set(); let uniq = [];
     visits.forEach(v => {
       const d = new Date(+v.t);
       const key = (v.ip || '?') + '|' + d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate() + '-' + d.getHours();
       if (!seen.has(key)) { seen.add(key); uniq.push(v); }
     });
+    // site filter tabs (computed on all uniq visits before filtering)
+    const allSites = {}; uniq.forEach(v => { const s = this.platformLabel(v); allSites[s] = (allSites[s] || 0) + 1; });
+    const knownSites = ['리멤버', '원티드', '잡코리아'];
+    const siteNames = ['전체'].concat(knownSites).concat(Object.keys(allSites).filter(s => knownSites.indexOf(s) < 0).sort());
+    const cur = this.state.siteFilter;
+    const siteTabs = siteNames.map(name => ({
+      name, count: name === '전체' ? uniq.length : (allSites[name] || 0),
+      bg: name === cur ? '#2F2B3DE6' : '#fff', color: name === cur ? '#fff' : '#2F2B3DE6',
+      pick: () => this.setState({ siteFilter: name })
+    }));
+    if (cur !== '전체') uniq = uniq.filter(v => this.platformLabel(v) === cur);
     const now = new Date();
     const sameDay = (d, e) => d.getFullYear() === e.getFullYear() && d.getMonth() === e.getMonth() && d.getDate() === e.getDate();
     const todayCount = uniq.filter(v => sameDay(new Date(+v.t), now)).length;
@@ -189,27 +190,22 @@ class Component extends DCLogic {
     for (let i = 13; i >= 0; i--) { const d = new Date(now); d.setDate(now.getDate() - i); const c = uniq.filter(v => sameDay(new Date(+v.t), d)).length; dailyCounts.push({ d, c }); dailyMax = Math.max(dailyMax, c); }
     dailyCounts.forEach(({ d, c }) => dailyBars.push({ h: Math.max(3, Math.round(c / dailyMax * 100)) + '%', count: c, label: (d.getMonth() + 1) + '/' + d.getDate(), tip: c + '회' }));
     // menu stats + referrers per menu
-    const menus = {}; uniq.forEach(v => { const m = v.menu || '?'; if (!menus[m]) menus[m] = { count: 0, refs: {} }; menus[m].count++; const r = this.refLabel(v.ref); menus[m].refs[r] = (menus[m].refs[r] || 0) + 1; });
+    const menuLabels = { introduction: 'Introduction (소개)', career: 'Career (경력)', portfolio: 'Portfolio (포트폴리오)', works: 'Works (작업 이력)' };
+    const menus = {}; Object.keys(menuLabels).forEach(k => { menus[k] = { count: 0, refs: {} }; });
+    uniq.forEach(v => { const m = v.menu || 'introduction'; if (!menus[m]) menus[m] = { count: 0, refs: {} }; menus[m].count++; const r = this.refLabel(v.ref); menus[m].refs[r] = (menus[m].refs[r] || 0) + 1; });
     const mMax = Math.max(1, ...Object.values(menus).map(m => m.count));
     const menuStats = Object.entries(menus).sort((a, b) => b[1].count - a[1].count).map(([menu, m]) => ({
-      menu, count: m.count, pct: Math.round(m.count / mMax * 100) + '%',
+      menu: menuLabels[menu] || menu, count: m.count, pct: Math.round(m.count / mMax * 100) + '%',
       refs: Object.entries(m.refs).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([r, c]) => r + ' ' + c).join(' · ') || '-'
     }));
-    // platform stats: src param first, then referrer host
-    const plats = {};
-    uniq.forEach(v => { const p = this.platformLabel(v); plats[p] = (plats[p] || 0) + 1; });
-    const pMax = Math.max(1, ...Object.values(plats));
-    const pTotal = Math.max(1, uniq.length);
-    const platformStats = Object.entries(plats).sort((a, b) => b[1] - a[1]).map(([name, count]) => ({
-      name, count, pct: Math.round(count / pMax * 100) + '%', share: '전체의 ' + Math.round(count / pTotal * 100) + '%'
-    }));
-    const ipList = Object.entries(ips).sort((a, b) => b[1].last - a[1].last).map(([ip, o]) => ({
+    const ipList = Object.entries(ips).sort((a, b) => b[1].last - a[1].last).slice(0, 5).map(([ip, o]) => ({
       ip, count: o.count,
       detail: '최근 ' + new Date(o.last).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' }) + ' · ' + Object.keys(o.menus).join(', ')
     }));
     return {
       todayCount, totalCount: uniq.length, uniqueIpCount: Object.keys(ips).length, rawCount: visits.length,
-      hourBars, dayBars, dailyBars, menuStats, ipList, platformStats,
+      hourBars, dayBars, dailyBars, menuStats, ipList, siteTabs,
+      filterNote: cur === '전체' ? '모든 유입 경로 합산 통계' : "'" + cur + "' 유입만 표시 중 — 아래 모든 항목이 해당 사이트 기준",
       endpoint: this.state.endpoint,
       sourceNote: this.state.fromRemote ? '데이터 소스: 원격 엔드포인트 (전체 방문자)' : '데이터 소스: 이 브라우저의 로컬 기록 — 전체 방문자 집계는 엔드포인트 연결 필요',
       onEndpointChange: (e) => this.setState({ endpoint: e.target.value }),
