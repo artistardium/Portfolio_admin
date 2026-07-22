@@ -30,7 +30,7 @@ a{color:#d97757}a:hover{color:#FF9F43}
     </div>
   </header>
   <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 32px">
-    <p style="font-size:12px;color:#2F2B3D8C;margin:0">{{ sourceNote }} · 반복 접속 제외 기준: 동일 IP의 1시간 내 재접속은 1회로 집계</p>
+    <p style="font-size:12px;color:#2F2B3D8C;margin:0">{{ sourceNote }} · 접속 집계: 동일 IP·동일 메뉴의 1시간 내 반복 접속은 1회로 계산</p>
     <a onClick="{{ toggleExcludeMe }}" title="{{ myIpNote }}" style="font-size:11px;font-weight:600;border:1px solid #E8E7E4;border-radius:99px;padding:6px 14px;cursor:pointer;background:{{ excludeBg }};color:{{ excludeColor }}">내 접속 제외</a>
   </div>
 
@@ -41,7 +41,7 @@ a{color:#d97757}a:hover{color:#FF9F43}
   </div>
   <p style="font-size:12px;color:#2F2B3D8C;margin:0 0 20px">{{ filterNote }}</p>
 
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px">
     <div style="background:#fff;border:1px solid #E8E7E4;border-radius:12px;padding:24px">
       <p style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#2F2B3D8C;margin:0 0 8px">오늘 접속</p>
       <p style="font-size:32px;font-weight:700;margin:0">{{ todayCount }}</p>
@@ -55,8 +55,9 @@ a{color:#d97757}a:hover{color:#FF9F43}
       <p style="font-size:32px;font-weight:700;margin:0">{{ uniqueIpCount }}</p>
     </div>
     <div style="background:#fff;border:1px solid #E8E7E4;border-radius:12px;padding:24px">
-      <p style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#2F2B3D8C;margin:0 0 8px">누적 방문자 수</p>
-      <p style="font-size:32px;font-weight:700;margin:0">{{ rawCount }}</p>
+      <p style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#2F2B3D8C;margin:0 0 8px">평균 체류 시간</p>
+      <p style="font-size:32px;font-weight:700;margin:0">{{ avgSessionDwell }}</p>
+      <p style="font-size:11px;color:#2F2B3D8C;margin:6px 0 0">방문 1회 기준 · 일 평균 {{ dailyAvgDwell }}</p>
     </div>
   </div>
 
@@ -100,13 +101,13 @@ a{color:#d97757}a:hover{color:#FF9F43}
     </div>
   </div>
 
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
     <div style="background:#fff;border:1px solid #E8E7E4;border-radius:12px;padding:24px">
       <p style="font-size:13px;font-weight:600;margin:0 0 16px">메뉴별 접속 통계</p>
       <sc-for list="{{ menuStats }}" as="m" hint-placeholder-count="4">
         <div style="padding:12px 0;border-bottom:1px solid #F0EFED">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <span style="font-size:13px;font-weight:600;text-transform:capitalize">{{ m.menu }}</span>
+            <span style="font-size:13px;font-weight:600">{{ m.menu }}</span>
             <span style="font-size:13px;font-weight:700;color:#d97757">{{ m.count }}회</span>
           </div>
           <div style="height:6px;background:#F0EFED;border-radius:99px;overflow:hidden"><div style="height:100%;background:#FF9F43;border-radius:99px;width:{{ m.pct }}"></div></div>
@@ -129,19 +130,184 @@ a{color:#d97757}a:hover{color:#FF9F43}
       </div>
     </div>
   </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+    <div style="background:#fff;border:1px solid #E8E7E4;border-radius:12px;padding:24px">
+      <p style="font-size:13px;font-weight:600;margin:0 0 4px">메뉴 이동 경로</p>
+      <p style="font-size:11px;color:#2F2B3D8C;margin:0 0 16px">방문 세션 안에서 어떤 메뉴 → 어떤 메뉴로 이동했는지</p>
+      <sc-if value="{{ hasNavFlow }}" hint-placeholder-val="{{ true }}">
+        <sc-for list="{{ navFlow }}" as="n" hint-placeholder-count="6">
+          <div style="padding:10px 0;border-bottom:1px solid #F0EFED">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-size:13px;font-weight:600">{{ n.label }}</span>
+              <span style="font-size:12px;font-weight:700;color:#d97757">{{ n.count }}회</span>
+            </div>
+            <div style="height:5px;background:#F0EFED;border-radius:99px;overflow:hidden"><div style="height:100%;background:#5B8DEF;border-radius:99px;width:{{ n.pct }}"></div></div>
+          </div>
+        </sc-for>
+      </sc-if>
+      <sc-if value="{{ noNavFlow }}"><p style="font-size:12px;color:#2F2B3D8C;margin:8px 0 0">이동 경로 데이터가 아직 없습니다. 새 추적 코드 배포 후 방문이 쌓이면 표시됩니다.</p></sc-if>
+    </div>
+    <div style="background:#fff;border:1px solid #E8E7E4;border-radius:12px;padding:24px">
+      <p style="font-size:13px;font-weight:600;margin:0 0 4px">재접속 통계</p>
+      <p style="font-size:11px;color:#2F2B3D8C;margin:0 0 16px">동일 IP · 30분 이상 간격이면 새 방문(세션)으로 계산</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+        <div style="background:#FBFAF8;border-radius:8px;padding:12px"><p style="font-size:10px;color:#2F2B3D8C;margin:0 0 4px">총 방문 세션</p><p style="font-size:22px;font-weight:700;margin:0">{{ totalSessions }}</p></div>
+        <div style="background:#FBFAF8;border-radius:8px;padding:12px"><p style="font-size:10px;color:#2F2B3D8C;margin:0 0 4px">재방문 IP</p><p style="font-size:22px;font-weight:700;margin:0">{{ returningIps }}</p></div>
+        <div style="background:#FBFAF8;border-radius:8px;padding:12px"><p style="font-size:10px;color:#2F2B3D8C;margin:0 0 4px">재방문 횟수</p><p style="font-size:22px;font-weight:700;margin:0">{{ totalRevisits }}</p></div>
+      </div>
+      <sc-for list="{{ revisitList }}" as="r" hint-placeholder-count="4">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #F0EFED;gap:12px">
+          <span style="font-size:12px;font-weight:600;font-family:monospace;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.ip }}</span>
+          <span style="font-size:11px;color:#2F2B3D8C;flex-shrink:0">{{ r.text }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+    <div style="background:#fff;border:1px solid #E8E7E4;border-radius:12px;padding:24px">
+      <p style="font-size:13px;font-weight:600;margin:0 0 4px">포트폴리오 클릭 순위</p>
+      <p style="font-size:11px;color:#2F2B3D8C;margin:0 0 16px">가장 많이 본 작업: <b style="color:#d97757">{{ topPortfolio }}</b></p>
+      <sc-if value="{{ hasPfRank }}" hint-placeholder-val="{{ true }}">
+        <sc-for list="{{ pfRank }}" as="p" hint-placeholder-count="5">
+          <div style="padding:10px 0;border-bottom:1px solid #F0EFED">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-size:13px;font-weight:600"><span style="color:#2F2B3D8C;margin-right:6px">{{ p.rank }}</span>{{ p.title }}</span>
+              <span style="font-size:12px;font-weight:700;color:#d97757">{{ p.count }}회</span>
+            </div>
+            <div style="height:5px;background:#F0EFED;border-radius:99px;overflow:hidden"><div style="height:100%;background:#FF9F43;border-radius:99px;width:{{ p.pct }}"></div></div>
+          </div>
+        </sc-for>
+      </sc-if>
+      <sc-if value="{{ noPfRank }}"><p style="font-size:12px;color:#2F2B3D8C;margin:8px 0 0">포트폴리오 상세 클릭 기록이 아직 없습니다.</p></sc-if>
+    </div>
+    <div style="background:#fff;border:1px solid #E8E7E4;border-radius:12px;padding:24px">
+      <p style="font-size:13px;font-weight:600;margin:0 0 4px">콘텐츠 머문 시간</p>
+      <p style="font-size:11px;color:#2F2B3D8C;margin:0 0 16px">가장 오래 머문 콘텐츠: <b style="color:#d97757">{{ topDwell }}</b></p>
+      <sc-if value="{{ hasDwell }}" hint-placeholder-val="{{ true }}">
+        <sc-for list="{{ dwellMenu }}" as="d" hint-placeholder-count="4">
+          <div style="padding:10px 0;border-bottom:1px solid #F0EFED">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-size:13px;font-weight:600">{{ d.label }}</span>
+              <span style="font-size:12px;font-weight:700;color:#d97757">{{ d.time }}</span>
+            </div>
+            <div style="height:5px;background:#F0EFED;border-radius:99px;overflow:hidden"><div style="height:100%;background:#3FBF8F;border-radius:99px;width:{{ d.pct }}"></div></div>
+            <p style="font-size:10px;color:#2F2B3D8C;margin:5px 0 0">평균 {{ d.avg }} · {{ d.n }}회 측정</p>
+          </div>
+        </sc-for>
+      </sc-if>
+      <sc-if value="{{ noDwell }}"><p style="font-size:12px;color:#2F2B3D8C;margin:8px 0 0">체류 시간 데이터가 아직 없습니다.</p></sc-if>
+    </div>
+  </div>
+
+  <div style="background:#fff;border:1px solid #E8E7E4;border-radius:12px;padding:24px;margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+      <div>
+        <p style="font-size:13px;font-weight:600;margin:0 0 4px">마우스 히트맵</p>
+        <p style="font-size:11px;color:#2F2B3D8C;margin:0">방문자의 마우스 이동(면)과 클릭(점) 분포 · 화면 가로/세로 비율 기준</p>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <sc-for list="{{ heatTabs }}" as="h" hint-placeholder-count="4">
+          <a onClick="{{ h.pick }}" style="font-size:11px;font-weight:600;border:1px solid #E8E7E4;border-radius:99px;padding:6px 14px;cursor:pointer;background:{{ h.bg }};color:{{ h.color }}">{{ h.name }}</a>
+        </sc-for>
+      </div>
+    </div>
+    <div style="position:relative;border:1px solid #E8E7E4;border-radius:8px;overflow:hidden;background:#FBFAF8">
+      <canvas id="pf-heat-canvas" width="1000" height="600" style="display:block;width:100%;height:auto"></canvas>
+      <sc-if value="{{ heatEmpty }}"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><span style="font-size:12px;color:#2F2B3D8C;background:#fff;border:1px solid #E8E7E4;border-radius:8px;padding:8px 14px">이 메뉴의 마우스 데이터가 아직 없습니다</span></div></sc-if>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;flex-wrap:wrap;gap:8px">
+      <p style="font-size:11px;color:#2F2B3D8C;margin:0">{{ heatSummary }}</p>
+      <div style="display:flex;gap:16px;font-size:11px;color:#2F2B3D8C">
+        <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;background:rgba(255,159,67,0.7);display:inline-block"></span>마우스 이동</span>
+        <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:99px;background:rgba(217,87,87,0.75);display:inline-block"></span>클릭 위치</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:#fff;border:1px solid #E8E7E4;border-radius:12px;padding:24px">
+    <p style="font-size:13px;font-weight:600;margin:0 0 4px">방문자별 상세</p>
+    <p style="font-size:11px;color:#2F2B3D8C;margin:0 0 16px">방문자(IP)별로 본 메뉴·클릭한 포트폴리오·이동 경로·체류 시간</p>
+    <sc-for list="{{ visitorCards }}" as="v" hint-placeholder-count="4">
+      <div style="border:1px solid #F0EFED;border-radius:10px;padding:16px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+          <span style="font-size:13px;font-weight:700;font-family:monospace">{{ v.ip }}</span>
+          <span style="font-size:11px;color:#2F2B3D8C">{{ v.meta }}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:80px 1fr;gap:6px 12px;font-size:12px">
+          <span style="color:#2F2B3D8C">본 메뉴</span><span>{{ v.menus }}</span>
+          <span style="color:#2F2B3D8C">포트폴리오</span><span>{{ v.pfs }}</span>
+          <span style="color:#2F2B3D8C">이동 경로</span><span style="color:#5B8DEF;font-weight:600">{{ v.path }}</span>
+        </div>
+      </div>
+    </sc-for>
+  </div>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
-  state = { siteFilter: '전체', myIp: '', excludeMe: localStorage.getItem('pf_exclude_me') !== '0', visits: [], endpoint: (function(){
+  state = { siteFilter: '전체', heatMenu: 'introduction', myIp: '', excludeMe: localStorage.getItem('pf_exclude_me') !== '0', visits: [], endpoint: (function(){
     var s = localStorage.getItem('pf_endpoint');
     if (s && (s.indexOf('AKfycbxkYqQVIFUj94LvY_L_cfm-SoVL7F2dGuW157ezBzEkrrPnnT8I-BYZLzxdw4ei49Oevg') > -1 || s.indexOf('AKfycbxUQZeTza47oB-GAYb7l7lTqrBEunse0WpW_tTrqplHEGjBe-nAcMPkSvsX4YuoTUob') > -1)) { s = null; localStorage.removeItem('pf_endpoint'); }
     return s;
-  })() || 'https://script.google.com/macros/s/AKfycbwhJ_cQs5hDh-FpvmxJd6ZeLk2Bk_U0zpx2wPhGhfNC0V5L45ki5pea6gsKgLr-qor86w/exec', fromRemote: false };
+  })() || 'https://script.google.com/macros/s/AKfycbwhJ_cQs5hDh-FpvmxJd6ZeLk2Bk_U0zpx2wPhGhfNC0V5L45ki5pea6gsKgLr-qor86w/exec', fromRemote: false, geo: {} };
+
+  // read extra event fields whether they came flat (endpoint) or nested under data (localStorage)
+  D(v, k) { return v[k] !== undefined ? v[k] : (v.data ? v.data[k] : undefined); }
+  evType(v) { const e = this.D(v, 'ev'); return e || 'view'; }
+  isView(v) { const e = this.D(v, 'ev'); return !e || e === 'view'; }
+  baseMenu(m) { return (m && m.indexOf('portfolio:') === 0) ? 'portfolio' : (m || 'introduction'); }
+  fmtDur(ms) { ms = Math.round(ms / 1000); if (ms < 60) return ms + '초'; const m = Math.floor(ms / 60), s = ms % 60; return m + '분' + (s ? ' ' + s + '초' : ''); }
+  fmtWhen(ms) { const d = new Date(+ms); const H = d.getHours(); const ap = H < 12 ? '오전' : '오후'; let h = H % 12; if (h === 0) h = 12; return (d.getMonth() + 1) + '월 ' + d.getDate() + '일 ' + ap + ' ' + h + '시 ' + d.getMinutes() + '분 ' + d.getSeconds() + '초'; }
+
+  ensureGeo(ip) {
+    if (!ip || ip === '?' || ip === 'unknown') return;
+    if (this.state.geo && this.state.geo[ip]) return;
+    if (!this._geoPending) this._geoPending = {};
+    if (this._geoPending[ip]) return;
+    this._geoPending[ip] = true;
+    queueMicrotask(() => {
+      this.setState(s => ({ geo: Object.assign({}, s.geo, { [ip]: 'pending' }) }));
+      fetch('https://ipwho.is/' + ip).then(r => r.json()).then(j => {
+        if (!j || j.success === false) { this.setState(s => ({ geo: Object.assign({}, s.geo, { [ip]: '지역 조회 실패' }) })); return; }
+        const parts = [j.city, j.region, j.country].filter(Boolean);
+        const isp = j.connection && (j.connection.isp || j.connection.org);
+        const label = parts.length ? parts.join(', ') + (isp ? ' (' + isp + ')' : '') : '지역 미상';
+        this.setState(s => ({ geo: Object.assign({}, s.geo, { [ip]: label }) }));
+      }).catch(() => { this.setState(s => ({ geo: Object.assign({}, s.geo, { [ip]: '지역 조회 실패' }) })); });
+    });
+  }
 
   componentDidMount() {
     fetch('https://api.ipify.org?format=json').then(r => r.json()).then(j => this.setState({ myIp: j.ip })).catch(() => {});
     this.load();
+    this.drawHeat();
+  }
+  componentDidUpdate() { this.drawHeat(); }
+
+  drawHeat() {
+    const c = document.getElementById('pf-heat-canvas'); if (!c) return;
+    const ctx = c.getContext('2d'); const W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H); ctx.fillStyle = '#FBFAF8'; ctx.fillRect(0, 0, W, H);
+    const agg = this._heatAgg; if (!agg) return;
+    const GW = agg.gw, GH = agg.gh, grid = agg.grid;
+    let gmax = 1; for (let i = 0; i < grid.length; i++) if (grid[i] > gmax) gmax = grid[i];
+    const cw = W / GW, ch = H / GH;
+    for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
+      const val = grid[y * GW + x]; if (!val) continue;
+      const a = Math.min(0.78, 0.12 + (val / gmax) * 0.66);
+      ctx.fillStyle = 'rgba(255,159,67,' + a + ')'; ctx.fillRect(x * cw, y * ch, cw, ch);
+    }
+    ctx.globalCompositeOperation = 'lighter';
+    agg.clicks.forEach(p => {
+      const cx = p[0] / 100 * W, cy = p[1] / 100 * H, r = 30;
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      g.addColorStop(0, 'rgba(217,87,87,0.5)'); g.addColorStop(1, 'rgba(217,87,87,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill();
+    });
+    ctx.globalCompositeOperation = 'source-over';
+    agg.clicks.forEach(p => { const cx = p[0] / 100 * W, cy = p[1] / 100 * H; ctx.fillStyle = 'rgba(150,40,40,0.9)'; ctx.beginPath(); ctx.arc(cx, cy, 4, 0, 7); ctx.fill(); });
   }
 
   load() {
@@ -156,59 +322,144 @@ class Component extends DCLogic {
   }
 
   renderVals() {
+    const D = (v, k) => this.D(v, k);
+    const menuLabels = { introduction: 'Introduction (소개)', career: 'Career (경력)', portfolio: 'Portfolio (포트폴리오)', works: 'Works (작업 이력)' };
+    const shortLabels = { introduction: '소개', career: '경력', portfolio: '포트폴리오', works: '작업 이력' };
+    const projectTitles = { p0: 'CloudGate 3.0', p1: '솔루션 정산 시스템 구축', p2: 'NFT Digital Certificate', p3: 'Digital Art Social Platform', p3b: 'Artwork Curation Platform', p4: 'Mobility Platform (동백택시·인천e음)', p5: '가맹점 온라인 전자계약 시스템', p7: '지역화폐 플랫폼', p7b: 'Kona Card App', p8: 'KB증권 올라디지털자산센터', p9: '유안타증권 펀드레이더' };
+    const labelMenu = (menu) => { if (menuLabels[menu]) return menuLabels[menu]; if (menu && menu.indexOf('portfolio:') === 0) { const id = menu.slice(10); return 'Portfolio › ' + (projectTitles[id] || id); } return menu; };
+    const pfTitle = (menu) => { const id = menu.slice(10); return projectTitles[id] || id; };
+
     let visits = this.state.visits.filter(v => v && v.t);
     if (this.state.excludeMe && this.state.myIp) visits = visits.filter(v => v.ip !== this.state.myIp);
-    // dedupe: same ip within same hour = 1 visit
-    const seen = new Set(); let uniq = [];
-    visits.forEach(v => {
-      const d = new Date(+v.t);
-      const key = (v.ip || '?') + '|' + d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate() + '-' + d.getHours();
-      if (!seen.has(key)) { seen.add(key); uniq.push(v); }
-    });
-    // site filter tabs (computed on all uniq visits before filtering)
-    const allSites = {}; uniq.forEach(v => { const s = this.platformLabel(v); allSites[s] = (allSites[s] || 0) + 1; });
+
+    // ---- site filter tabs (from deduped views, before filtering) ----
+    const allViews = visits.filter(v => this.isView(v));
+    const dedup = (arr) => { const seen = new Set(); const out = []; arr.forEach(v => { const d = new Date(+v.t); const key = (v.ip || '?') + '|' + (v.menu || '?') + '|' + d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate() + '-' + d.getHours(); if (!seen.has(key)) { seen.add(key); out.push(v); } }); return out; };
+    const uniqAll = dedup(allViews);
+    const allSites = {}; uniqAll.forEach(v => { const s = this.platformLabel(v); allSites[s] = (allSites[s] || 0) + 1; });
     const knownSites = ['리멤버', '원티드', '잡코리아'];
     const siteNames = ['전체'].concat(knownSites).concat(Object.keys(allSites).filter(s => knownSites.indexOf(s) < 0).sort());
     const cur = this.state.siteFilter;
     const siteTabs = siteNames.map(name => ({
-      name, count: name === '전체' ? uniq.length : (allSites[name] || 0),
+      name, count: name === '전체' ? uniqAll.length : (allSites[name] || 0),
       bg: name === cur ? '#2F2B3DE6' : '#fff', color: name === cur ? '#fff' : '#2F2B3DE6',
       pick: () => this.setState({ siteFilter: name })
     }));
-    if (cur !== '전체') uniq = uniq.filter(v => this.platformLabel(v) === cur);
+
+    // ---- apply site filter to the whole event stream ----
+    const passSite = (v) => cur === '전체' || this.platformLabel(v) === cur;
+    const fVisits = visits.filter(passSite);
+    const fViews = fVisits.filter(v => this.isView(v));
+    const dwellEv = fVisits.filter(v => this.evType(v) === 'dwell');
+    const heatEv = fVisits.filter(v => this.evType(v) === 'heat');
+    const uniq = dedup(fViews);
+
     const now = new Date();
     const sameDay = (d, e) => d.getFullYear() === e.getFullYear() && d.getMonth() === e.getMonth() && d.getDate() === e.getDate();
     const todayCount = uniq.filter(v => sameDay(new Date(+v.t), now)).length;
     const ips = {}; uniq.forEach(v => { const k = v.ip || '?'; if (!ips[k]) ips[k] = { count: 0, last: 0, menus: {} }; ips[k].count++; ips[k].last = Math.max(ips[k].last, +v.t); ips[k].menus[v.menu || '?'] = 1; });
-    // hourly
+
+    // hourly / weekday / daily
     const hours = new Array(24).fill(0); uniq.forEach(v => hours[new Date(+v.t).getHours()]++);
     const hMax = Math.max(1, ...hours);
     const hourBars = hours.map((c, i) => ({ h: Math.round(c / hMax * 100) + '%', tip: i + '시: ' + c + '회', color: c ? '#FF9F43' : '#F0EFED' }));
-    // weekday
     const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
     const days = new Array(7).fill(0); uniq.forEach(v => days[new Date(+v.t).getDay()]++);
     const dMax = Math.max(1, ...days);
     const dayBars = days.map((c, i) => ({ h: Math.round(c / dMax * 100) + '%', label: dayNames[i], tip: dayNames[i] + ': ' + c + '회', color: c ? '#d97757' : '#F0EFED' }));
-    // daily last 14
     const dailyBars = []; let dailyMax = 1; const dailyCounts = [];
     for (let i = 13; i >= 0; i--) { const d = new Date(now); d.setDate(now.getDate() - i); const c = uniq.filter(v => sameDay(new Date(+v.t), d)).length; dailyCounts.push({ d, c }); dailyMax = Math.max(dailyMax, c); }
     dailyCounts.forEach(({ d, c }) => dailyBars.push({ h: Math.max(3, Math.round(c / dailyMax * 100)) + '%', count: c, label: (d.getMonth() + 1) + '/' + d.getDate(), tip: c + '회' }));
-    // menu stats + referrers per menu
-    const menuLabels = { introduction: 'Introduction (소개)', career: 'Career (경력)', portfolio: 'Portfolio (포트폴리오)', works: 'Works (작업 이력)' };
+
+    // menu stats
     const menus = {}; Object.keys(menuLabels).forEach(k => { menus[k] = { count: 0, refs: {} }; });
     uniq.forEach(v => { const m = v.menu || 'introduction'; if (!menus[m]) menus[m] = { count: 0, refs: {} }; menus[m].count++; const r = this.refLabel(v.ref); menus[m].refs[r] = (menus[m].refs[r] || 0) + 1; });
     const mMax = Math.max(1, ...Object.values(menus).map(m => m.count));
     const menuStats = Object.entries(menus).sort((a, b) => b[1].count - a[1].count).map(([menu, m]) => ({
-      menu: menuLabels[menu] || menu, count: m.count, pct: Math.round(m.count / mMax * 100) + '%',
+      menu: labelMenu(menu), count: m.count, pct: Math.round(m.count / mMax * 100) + '%',
       refs: Object.entries(m.refs).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([r, c]) => r + ' ' + c).join(' · ') || '-'
     }));
-    const ipList = Object.entries(ips).sort((a, b) => b[1].last - a[1].last).slice(0, 5).map(([ip, o]) => ({
-      ip, count: o.count,
-      detail: '최근 ' + new Date(o.last).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' }) + ' · ' + Object.keys(o.menus).join(', ')
-    }));
+
+    // ---- sessions (per IP, 30-min gap = new session) ----
+    const GAP = 30 * 60 * 1000;
+    const byIp = {}; fViews.forEach(v => { (byIp[v.ip || '?'] = byIp[v.ip || '?'] || []).push(+v.t); });
+    const ipSessions = {}; let totalSessions = 0, returningIps = 0, totalRevisits = 0;
+    Object.entries(byIp).forEach(([ip, ts]) => { ts.sort((a, b) => a - b); let s = 1; for (let i = 1; i < ts.length; i++) if (ts[i] - ts[i - 1] > GAP) s++; ipSessions[ip] = s; totalSessions += s; if (s > 1) { returningIps++; totalRevisits += (s - 1); } });
+    const revisitList = Object.entries(ipSessions).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([ip, s]) => ({ ip, text: '방문 ' + s + '회 · 재방문 ' + (s - 1) + '회' }));
+
+    // ---- navigation flow (per session ordering) ----
+    const sessGroups = {}; fViews.forEach(v => { const k = D(v, 'sid') || ((v.ip || '?') + '|' + Math.floor(+v.t / GAP)); (sessGroups[k] = sessGroups[k] || []).push(v); });
+    const trans = {};
+    Object.values(sessGroups).forEach(list => { list.sort((a, b) => +a.t - +b.t); for (let i = 1; i < list.length; i++) { const a = this.baseMenu(list[i - 1].menu), b = this.baseMenu(list[i].menu); if (a !== b) { const key = a + '→' + b; trans[key] = (trans[key] || 0) + 1; } } });
+    const transEntries = Object.entries(trans).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    const tMax = Math.max(1, ...transEntries.map(e => e[1]));
+    const navFlow = transEntries.map(([k, c]) => { const [a, b] = k.split('→'); return { label: (shortLabels[a] || a) + '  →  ' + (shortLabels[b] || b), count: c, pct: Math.round(c / tMax * 100) + '%' }; });
+    const hasNavFlow = navFlow.length > 0; const noNavFlow = !hasNavFlow;
+
+    // ---- portfolio click ranking ----
+    const pfCounts = {}; fViews.forEach(v => { if (v.menu && v.menu.indexOf('portfolio:') === 0) pfCounts[v.menu] = (pfCounts[v.menu] || 0) + 1; });
+    const pfEntries = Object.entries(pfCounts).sort((a, b) => b[1] - a[1]);
+    const pfMax = Math.max(1, ...pfEntries.map(e => e[1]));
+    const pfRank = pfEntries.slice(0, 12).map(([m, c], i) => ({ rank: (i + 1) + '.', title: pfTitle(m), count: c, pct: Math.round(c / pfMax * 100) + '%' }));
+    const hasPfRank = pfRank.length > 0; const noPfRank = !hasPfRank;
+    const topPortfolio = pfEntries.length ? pfTitle(pfEntries[0][0]) : '—';
+
+    // ---- dwell time ----
+    const dwellMenuAgg = {}; const dwellContentAgg = {}; let totalDwell = 0; const dwellDays = {}; const dwellSessDay = {};
+    dwellEv.forEach(v => { const dur = +(D(v, 'dur') || 0); if (!dur) return; totalDwell += dur; const bm = this.baseMenu(v.menu); (dwellMenuAgg[bm] = dwellMenuAgg[bm] || { total: 0, n: 0 }); dwellMenuAgg[bm].total += dur; dwellMenuAgg[bm].n++; const fm = v.menu || 'introduction'; (dwellContentAgg[fm] = dwellContentAgg[fm] || 0); dwellContentAgg[fm] += dur; const dk = new Date(+v.t); const dayKey = dk.getFullYear() + '-' + dk.getMonth() + '-' + dk.getDate(); dwellDays[dayKey] = (dwellDays[dayKey] || 0) + dur; const sid = D(v, 'sid') || ((v.ip || '?') + '|' + Math.floor(+v.t / GAP)); (dwellSessDay[dayKey] = dwellSessDay[dayKey] || new Set()).add(sid); });
+    const dwMax = Math.max(1, ...Object.values(dwellMenuAgg).map(o => o.total));
+    const dwellMenu = Object.entries(dwellMenuAgg).sort((a, b) => b[1].total - a[1].total).map(([m, o]) => ({ label: shortLabels[m] || m, time: this.fmtDur(o.total), avg: this.fmtDur(o.total / o.n), n: o.n, pct: Math.round(o.total / dwMax * 100) + '%' }));
+    const hasDwell = dwellMenu.length > 0; const noDwell = !hasDwell;
+    const contentEntries = Object.entries(dwellContentAgg).sort((a, b) => b[1] - a[1]);
+    const topDwell = contentEntries.length ? labelMenu(contentEntries[0][0]) + ' · ' + this.fmtDur(contentEntries[0][1]) : '—';
+    const avgSessionDwell = totalSessions ? this.fmtDur(totalDwell / totalSessions) : '—';
+    const nDwellDays = Object.keys(dwellDays).length;
+    const dailyAvgDwell = nDwellDays ? this.fmtDur(totalDwell / nDwellDays) : '—';
+
+    // ---- mouse heatmap (selected menu) ----
+    const hm = this.state.heatMenu || 'introduction';
+    let gw = 20, gh = 12; const cells = {}; const hClicks = [];
+    heatEv.forEach(v => { if (this.baseMenu(v.menu) !== hm) return; gw = D(v, 'gw') || gw; gh = D(v, 'gh') || gh; const mv = D(v, 'moves'); if (Array.isArray(mv)) mv.forEach(pr => { cells[pr[0]] = (cells[pr[0]] || 0) + pr[1]; }); const cl = D(v, 'clicks'); if (Array.isArray(cl)) cl.forEach(pt => hClicks.push(pt)); });
+    const grid = new Array(gw * gh).fill(0); Object.entries(cells).forEach(([i, c]) => { grid[+i] = c; });
+    this._heatAgg = { gw, gh, grid, clicks: hClicks };
+    const moveTotal = Object.values(cells).reduce((a, b) => a + b, 0);
+    const heatEmpty = hClicks.length === 0 && moveTotal === 0;
+    const heatSummary = heatEmpty ? '' : ('클릭 ' + hClicks.length + '개 · 마우스 이동 샘플 ' + moveTotal + '개');
+    const heatTabs = ['introduction', 'career', 'portfolio', 'works'].map(k => ({ name: shortLabels[k], bg: k === hm ? '#2F2B3DE6' : '#fff', color: k === hm ? '#fff' : '#2F2B3DE6', pick: () => this.setState({ heatMenu: k }) }));
+
+    // ---- per-visitor detail ----
+    const vd = {};
+    fViews.forEach(v => { const ip = v.ip || '?'; (vd[ip] = vd[ip] || { last: 0, menus: {}, pfs: {} }); vd[ip].last = Math.max(vd[ip].last, +v.t); const bm = this.baseMenu(v.menu); vd[ip].menus[bm] = (vd[ip].menus[bm] || 0) + 1; if (v.menu && v.menu.indexOf('portfolio:') === 0) { const t = pfTitle(v.menu); vd[ip].pfs[t] = (vd[ip].pfs[t] || 0) + 1; } });
+    const dwellByIp = {}; dwellEv.forEach(v => { const dur = +(D(v, 'dur') || 0); dwellByIp[v.ip || '?'] = (dwellByIp[v.ip || '?'] || 0) + dur; });
+    const lastPathByIp = {};
+    Object.entries(sessGroups).forEach(([k, list]) => { list.sort((a, b) => +a.t - +b.t); const ip = list[0].ip || '?'; const t = Math.max(...list.map(x => +x.t)); if (!lastPathByIp[ip] || t > lastPathByIp[ip].t) { const seq = []; list.forEach(x => { const bm = shortLabels[this.baseMenu(x.menu)] || this.baseMenu(x.menu); if (seq[seq.length - 1] !== bm) seq.push(bm); }); lastPathByIp[ip] = { t, path: seq.join(' → ') }; } });
+    const visitorCards = Object.entries(vd).sort((a, b) => b[1].last - a[1].last).slice(0, 8).map(([ip, o]) => {
+      this.ensureGeo(ip);
+      const g = this.state.geo && this.state.geo[ip]; const geoTxt = g && g !== 'pending' ? g : '';
+      const topMenus = Object.entries(o.menus).sort((a, b) => b[1] - a[1]).map(([m, c]) => (shortLabels[m] || m) + ' ' + c).join(' · ') || '-';
+      const topPfs = Object.entries(o.pfs).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([t, c]) => t + (c > 1 ? '(' + c + ')' : '')).join(', ') || '-';
+      const dw = dwellByIp[ip] ? this.fmtDur(dwellByIp[ip]) : '기록 없음';
+      const meta = (geoTxt ? geoTxt + ' · ' : '') + '방문 ' + (ipSessions[ip] || 1) + '회 · 체류 ' + dw + ' · 최근 ' + this.fmtWhen(o.last);
+      return { ip, meta, menus: topMenus, pfs: topPfs, path: (lastPathByIp[ip] && lastPathByIp[ip].path) || '-' };
+    });
+
+    // legacy IP list
+    const ipList = Object.entries(ips).sort((a, b) => b[1].last - a[1].last).slice(0, 5).map(([ip, o]) => {
+      this.ensureGeo(ip);
+      const g = this.state.geo && this.state.geo[ip];
+      const geoTxt = g ? (g === 'pending' ? '지역 조회 중…' : g) : '';
+      return { ip, count: o.count, detail: '최근 ' + this.fmtWhen(o.last) + (geoTxt ? ' · ' + geoTxt : '') + ' · ' + Object.keys(o.menus).map(m => this.baseMenu(m)).filter((x, i, a) => a.indexOf(x) === i).join(', ') };
+    });
+
     return {
-      todayCount, totalCount: uniq.length, uniqueIpCount: Object.keys(ips).length, rawCount: visits.length,
+      todayCount, totalCount: uniq.length, uniqueIpCount: Object.keys(ips).length, avgSessionDwell, dailyAvgDwell,
       hourBars, dayBars, dailyBars, menuStats, ipList, siteTabs,
+      navFlow, hasNavFlow, noNavFlow,
+      totalSessions, returningIps, totalRevisits, revisitList,
+      pfRank, hasPfRank, noPfRank, topPortfolio,
+      dwellMenu, hasDwell, noDwell, topDwell,
+      heatTabs, heatEmpty, heatSummary,
+      visitorCards,
       filterNote: cur === '전체' ? '모든 유입 경로 합산 통계' : "'" + cur + "' 유입만 표시 중 — 아래 모든 항목이 해당 사이트 기준",
       endpoint: this.state.endpoint,
       sourceNote: this.state.fromRemote ? '데이터 소스: 원격 엔드포인트 (전체 방문자)' : '데이터 소스: 이 브라우저의 로컬 기록 — 전체 방문자 집계는 엔드포인트 연결 필요',
