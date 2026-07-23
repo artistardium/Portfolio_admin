@@ -232,7 +232,10 @@ a{color:#d97757}a:hover{color:#FF9F43}
     <sc-for list="{{ visitorCards }}" as="v" hint-placeholder-count="4">
       <div style="border:1px solid #F0EFED;border-radius:10px;padding:16px;margin-bottom:12px">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
-          <span style="font-size:13px;font-weight:700;font-family:monospace">{{ v.ip }}</span>
+          <span style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:13px;font-weight:700;font-family:monospace">{{ v.ip }}</span>
+            <a onClick="{{ v.toggleExclude }}" style="font-size:10px;font-weight:600;border:1px solid #E8E7E4;border-radius:99px;padding:3px 9px;cursor:pointer;background:{{ v.exBg }};color:{{ v.exColor }}">{{ v.exLabel }}</a>
+          </span>
           <span style="font-size:11px;color:#2F2B3D8C">{{ v.meta }}</span>
         </div>
         <div style="display:grid;grid-template-columns:80px 1fr;gap:6px 12px;font-size:12px">
@@ -247,7 +250,7 @@ a{color:#d97757}a:hover{color:#FF9F43}
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
-  state = { siteFilter: '전체', heatMenu: 'introduction', myIp: '', excludeMe: localStorage.getItem('pf_exclude_me') !== '0', visits: [], endpoint: (function(){
+  state = { siteFilter: '전체', heatMenu: 'introduction', myIp: '', excludeMe: localStorage.getItem('pf_exclude_me') !== '0', excludedIps: (function(){ try{ return JSON.parse(localStorage.getItem('pf_excluded_ips')||'[]'); }catch(e){ return []; } })(), visits: [], endpoint: (function(){
     var s = localStorage.getItem('pf_endpoint');
     if (s && (s.indexOf('AKfycbxkYqQVIFUj94LvY_L_cfm-SoVL7F2dGuW157ezBzEkrrPnnT8I-BYZLzxdw4ei49Oevg') > -1 || s.indexOf('AKfycbxUQZeTza47oB-GAYb7l7lTqrBEunse0WpW_tTrqplHEGjBe-nAcMPkSvsX4YuoTUob') > -1 || s.indexOf('AKfycbwhJ_cQs5hDh-FpvmxJd6ZeLk2Bk_U0zpx2wPhGhfNC0V5L45ki5pea6gsKgLr-qor86w') > -1)) { s = null; localStorage.removeItem('pf_endpoint'); }
     return s;
@@ -277,6 +280,14 @@ class Component extends DCLogic {
         this.setState(s => ({ geo: Object.assign({}, s.geo, { [ip]: label }) }));
       }).catch(() => { this.setState(s => ({ geo: Object.assign({}, s.geo, { [ip]: '지역 조회 실패' }) })); });
     });
+  }
+
+  toggleExcludeIp(ip) {
+    const set = new Set(this.state.excludedIps || []);
+    if (set.has(ip)) set.delete(ip); else set.add(ip);
+    const arr = Array.from(set);
+    localStorage.setItem('pf_excluded_ips', JSON.stringify(arr));
+    this.setState({ excludedIps: arr });
   }
 
   componentDidMount() {
@@ -329,8 +340,10 @@ class Component extends DCLogic {
     const labelMenu = (menu) => { if (menuLabels[menu]) return menuLabels[menu]; if (menu && menu.indexOf('portfolio:') === 0) { const id = menu.slice(10); return 'Portfolio › ' + (projectTitles[id] || id); } return menu; };
     const pfTitle = (menu) => { const id = menu.slice(10); return projectTitles[id] || id; };
 
-    let visits = this.state.visits.filter(v => v && v.t);
-    if (this.state.excludeMe && this.state.myIp) visits = visits.filter(v => v.ip !== this.state.myIp);
+    const excludedSet = new Set(this.state.excludedIps || []);
+    if (this.state.excludeMe && this.state.myIp) excludedSet.add(this.state.myIp);
+    const visitsAll = this.state.visits.filter(v => v && v.t);
+    let visits = visitsAll.filter(v => !excludedSet.has(v.ip || '?'));
 
     // ---- site filter tabs (from deduped views, before filtering) ----
     const allViews = visits.filter(v => this.isView(v));
@@ -429,7 +442,8 @@ class Component extends DCLogic {
 
     // ---- per-visitor detail ----
     const vd = {};
-    fViews.forEach(v => { const ip = v.ip || '?'; (vd[ip] = vd[ip] || { last: 0, menus: {}, pfs: {} }); vd[ip].last = Math.max(vd[ip].last, +v.t); const bm = this.baseMenu(v.menu); vd[ip].menus[bm] = (vd[ip].menus[bm] || 0) + 1; if (v.menu && v.menu.indexOf('portfolio:') === 0) { const t = pfTitle(v.menu); vd[ip].pfs[t] = (vd[ip].pfs[t] || 0) + 1; } });
+    const fViewsAll = visitsAll.filter(v => this.isView(v)).filter(passSite);
+    fViewsAll.forEach(v => { const ip = v.ip || '?'; (vd[ip] = vd[ip] || { last: 0, menus: {}, pfs: {} }); vd[ip].last = Math.max(vd[ip].last, +v.t); const bm = this.baseMenu(v.menu); vd[ip].menus[bm] = (vd[ip].menus[bm] || 0) + 1; if (v.menu && v.menu.indexOf('portfolio:') === 0) { const t = pfTitle(v.menu); vd[ip].pfs[t] = (vd[ip].pfs[t] || 0) + 1; } });
     const dwellByIp = {}; dwellEv.forEach(v => { const dur = +(D(v, 'dur') || 0); dwellByIp[v.ip || '?'] = (dwellByIp[v.ip || '?'] || 0) + dur; });
     const lastPathByIp = {};
     Object.entries(sessGroups).forEach(([k, list]) => { list.sort((a, b) => +a.t - +b.t); const ip = list[0].ip || '?'; const t = Math.max(...list.map(x => +x.t)); if (!lastPathByIp[ip] || t > lastPathByIp[ip].t) { const seq = []; list.forEach(x => { const bm = shortLabels[this.baseMenu(x.menu)] || this.baseMenu(x.menu); if (seq[seq.length - 1] !== bm) seq.push(bm); }); lastPathByIp[ip] = { t, path: seq.join(' → ') }; } });
@@ -440,7 +454,12 @@ class Component extends DCLogic {
       const topPfs = Object.entries(o.pfs).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([t, c]) => t + (c > 1 ? '(' + c + ')' : '')).join(', ') || '-';
       const dw = dwellByIp[ip] ? this.fmtDur(dwellByIp[ip]) : '기록 없음';
       const meta = (geoTxt ? geoTxt + ' · ' : '') + '방문 ' + (ipSessions[ip] || 1) + '회 · 체류 ' + dw + ' · 최근 ' + this.fmtWhen(o.last);
-      return { ip, meta, menus: topMenus, pfs: topPfs, path: (lastPathByIp[ip] && lastPathByIp[ip].path) || '-' };
+      const excluded = excludedSet.has(ip);
+      const isMine = this.state.excludeMe && this.state.myIp === ip;
+      return { ip, meta, menus: topMenus, pfs: topPfs, path: (lastPathByIp[ip] && lastPathByIp[ip].path) || '-',
+        exLabel: isMine ? '내 IP' : (excluded ? '포함' : '제외'),
+        exBg: excluded ? '#FF9F43' : '#fff', exColor: excluded ? '#fff' : '#2F2B3DE6',
+        toggleExclude: isMine ? (() => {}) : (() => this.toggleExcludeIp(ip)) };
     });
 
     // legacy IP list
