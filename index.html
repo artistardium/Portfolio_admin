@@ -116,7 +116,7 @@ a{color:#d97757}a:hover{color:#FF9F43}
       </sc-for>
     </div>
     <div style="background:#fff;border:1px solid #E8E7E4;border-radius:12px;padding:24px">
-      <p style="font-size:13px;font-weight:600;margin:0 0 16px">방문 IP (최근순 · 최대 5개)</p>
+      <p style="font-size:13px;font-weight:600;margin:0 0 16px">방문 IP (최근순 · 최대 30개)</p>
       <div style="max-height:420px;overflow-y:auto">
         <sc-for list="{{ ipList }}" as="ip" hint-placeholder-count="8">
           <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #F0EFED;gap:12px">
@@ -433,7 +433,7 @@ class Component extends DCLogic {
     const dwellByIp = {}; dwellEv.forEach(v => { const dur = +(D(v, 'dur') || 0); dwellByIp[v.ip || '?'] = (dwellByIp[v.ip || '?'] || 0) + dur; });
     const lastPathByIp = {};
     Object.entries(sessGroups).forEach(([k, list]) => { list.sort((a, b) => +a.t - +b.t); const ip = list[0].ip || '?'; const t = Math.max(...list.map(x => +x.t)); if (!lastPathByIp[ip] || t > lastPathByIp[ip].t) { const seq = []; list.forEach(x => { const bm = shortLabels[this.baseMenu(x.menu)] || this.baseMenu(x.menu); if (seq[seq.length - 1] !== bm) seq.push(bm); }); lastPathByIp[ip] = { t, path: seq.join(' → ') }; } });
-    const visitorCards = Object.entries(vd).sort((a, b) => b[1].last - a[1].last).slice(0, 8).map(([ip, o]) => {
+    const visitorCards = Object.entries(vd).sort((a, b) => b[1].last - a[1].last).slice(0, 30).map(([ip, o]) => {
       this.ensureGeo(ip);
       const g = this.state.geo && this.state.geo[ip]; const geoTxt = g && g !== 'pending' ? g : '';
       const topMenus = Object.entries(o.menus).sort((a, b) => b[1] - a[1]).map(([m, c]) => (shortLabels[m] || m) + ' ' + c).join(' · ') || '-';
@@ -444,7 +444,7 @@ class Component extends DCLogic {
     });
 
     // legacy IP list
-    const ipList = Object.entries(ips).sort((a, b) => b[1].last - a[1].last).slice(0, 5).map(([ip, o]) => {
+    const ipList = Object.entries(ips).sort((a, b) => b[1].last - a[1].last).slice(0, 30).map(([ip, o]) => {
       this.ensureGeo(ip);
       const g = this.state.geo && this.state.geo[ip];
       const geoTxt = g ? (g === 'pending' ? '지역 조회 중…' : g) : '';
